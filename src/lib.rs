@@ -94,8 +94,13 @@ impl SquareMatrix {
 	}
 
     // Matrix inversion
-    pub fn invert(self) -> SquareMatrix {
-        let d = 1.0 / self.deter();
+    pub fn invert(self) -> Result<SquareMatrix, Error> {
+        let d = self.deter();
+
+        if d == 0.0 {
+            return Err(Error::new(ErrorKind::Other, "Determinant is 0: can't be inverted"));
+        } 
+            
         let transposed_mat = self.transpose();
         let mut inv_mat = SquareMatrix::new(self.size);
 
@@ -105,7 +110,8 @@ impl SquareMatrix {
             }
         }
 
-        inv_mat
+        Ok(inv_mat)
+        
     }
 }
 
@@ -220,6 +226,7 @@ impl MatrixTraits for Matrix {
             }
 
             return Ok(mat);
+
         } else {
             return Err(Error::new(ErrorKind::InvalidInput, "Mismatched matrix dimensions"));
         }
@@ -270,17 +277,26 @@ mod tests {
         test_object.set(3, 2, 3.0);
         test_object.set(3, 3, -4.0);
 
-        let string_result = serde_json::to_string(&test_object);
-        let string = string_result.expect("Err");
+        // Check if the determinant is computed correctly
+        assert_eq!(test_object.deter(), 1.0);
+
+        // Testing the passing of a matrix object as a stringified JSON
+        let string = serde_json::to_string(&test_object).expect("Err");
+        let recomposed_matrix = serde_json::from_str(&string).expect("Err");
+        assert_eq!(test_object, recomposed_matrix);
         
+        // Check if the determinant of the stringified matrix is computed correctly
         assert_eq!(determinant(string), 1.0);
+
+        // Ckeck if the determinant of the recomposed matrix is correct
+        assert_eq!(recomposed_matrix.deter(), 1.0);
     }
 
     #[test]
     fn square_transposition_test() {
-        let mut original_matrix = SquareMatrix::new(3);
-        let mut transposed_matrix = SquareMatrix::new(3);
 
+        // Reference matrix
+        let mut original_matrix = SquareMatrix::new(3);
         original_matrix.set(1, 1, 1.0);
         original_matrix.set(1, 2, -1.0);
         original_matrix.set(1, 3, 0.0);
@@ -291,6 +307,8 @@ mod tests {
         original_matrix.set(3, 2, 3.0);
         original_matrix.set(3, 3, -4.0);
 
+        // Hand-transposed matrix
+        let mut transposed_matrix = SquareMatrix::new(3);
         transposed_matrix.set(1, 1, 1.0);
         transposed_matrix.set(1, 2, 1.0);
         transposed_matrix.set(1, 3, 2.0);
@@ -301,6 +319,7 @@ mod tests {
         transposed_matrix.set(3, 2, -1.0);
         transposed_matrix.set(3, 3, -4.0);
 
+        // Check if the function-transposed and the hand-transposed matrix are equal
         assert_eq!(original_matrix.transpose(), transposed_matrix);
     }
 
@@ -330,7 +349,18 @@ mod tests {
         inverse_matrix.set(3, 2, -5.0);
         inverse_matrix.set(3, 3, 1.0);
 
-        assert_eq!(original_matrix, inverse_matrix.invert());
+        // Check if the matrix gets inverted correctly
+        assert_eq!(original_matrix, inverse_matrix.invert().unwrap());
+
+        let mut det_0_matrix = SquareMatrix::new(3);
+        
+        det_0_matrix.set(1, 1, 1.0);
+        det_0_matrix.set(1, 2, 2.0);
+        det_0_matrix.set(2, 1, 2.0);
+        det_0_matrix.set(2, 2, 4.0);
+
+        // Check for error on non-invertible matrices
+        assert_eq!(det_0_matrix.invert().is_err(), true);
     }
 
     
@@ -378,8 +408,9 @@ mod tests {
 
     #[test]
     fn transposition_test() {
-        let mut original_matrix = Matrix::new(3,2);
 
+        // Reference matrix
+        let mut original_matrix = Matrix::new(3,2);
         original_matrix.set(1, 1, 1.0);
         original_matrix.set(1, 2, -1.0);
         original_matrix.set(1, 3, 0.0);
@@ -387,8 +418,8 @@ mod tests {
         original_matrix.set(2, 2, 0.0);
         original_matrix.set(2, 3, -1.0);
 
+        // Matrix transposed by hand
         let mut transpose_matrix = Matrix::new(2,3);
-        
         transpose_matrix.set(1, 1, 1.0);
         transpose_matrix.set(1, 2, 1.0);
         transpose_matrix.set(2, 1, -1.0);
@@ -396,6 +427,7 @@ mod tests {
         transpose_matrix.set(3, 1, 0.0);
         transpose_matrix.set(3, 2, -1.0);
 
+        // Check if the function-transposed and the hand-transposed matrix are equal
         assert_eq!(original_matrix.transpose(), transpose_matrix);
     }
 
@@ -419,6 +451,7 @@ mod tests {
         second_matrix.set(3, 1, 0.0);
         second_matrix.set(3, 2, -1.0);
 
+        // Check whether non-invertible matrices are detected correctly
         assert_eq!(original_matrix.sum(second_matrix).is_err(), true);
         assert_eq!(original_matrix.sum(original_matrix.to_owned()).is_err(), false);
 
@@ -431,6 +464,7 @@ mod tests {
         third_matrix.set(2, 2, 0.0);
         third_matrix.set(2, 3, -2.0);
 
+        // Check if the matrix gets inverted correctly
         assert_eq!(original_matrix.sum(original_matrix.to_owned()).unwrap(), third_matrix);
     }
 }
