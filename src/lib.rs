@@ -3,6 +3,8 @@ use serde::Serialize;
 use wasm_bindgen::prelude::*;
 use std::io::{Error, ErrorKind};
 
+mod statistics;
+
 #[wasm_bindgen]
 pub fn sqrt(n: f64) -> f64 {
     f64::sqrt(n)
@@ -266,6 +268,8 @@ mod tests {
 
     #[test]
     fn determinant_test_2() {
+
+        // Reference matrix
         let mut test_object = SquareMatrix::new(3);
         test_object.set(1, 1, 1.0);
         test_object.set(1, 2, -1.0);
