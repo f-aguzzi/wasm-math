@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
+use std::io::{Error, ErrorKind};
 
 #[wasm_bindgen]
 pub fn sqrt(n: f64) -> f64 {
@@ -8,12 +9,15 @@ pub fn sqrt(n: f64) -> f64 {
 }
 
 trait MatrixTraits {
+    type SuperMatrix;
+
     fn set(&mut self, row: usize, col:usize, val:f64);
     fn get(&self, row: usize, col:usize) -> f64;
     fn transpose(&self) -> Self;
+    fn sum(&self, mat2: Self) -> Result<Self::SuperMatrix, Error>;
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
 #[serde(rename_all = "PascalCase")]
 struct SquareMatrix {
     size: usize,
@@ -106,6 +110,9 @@ impl SquareMatrix {
 }
 
 impl MatrixTraits for SquareMatrix {
+
+    type SuperMatrix = SquareMatrix;
+
     fn set(&mut self, row: usize, col:usize, val:f64) {
 		self.matrix[((row-1) * self.size + (col - 1)) as usize] = val
 	}
@@ -124,6 +131,26 @@ impl MatrixTraits for SquareMatrix {
 
         transposed_mat
     }
+
+    fn sum(&self, mat2: SquareMatrix) -> Result<SquareMatrix, std::io::Error> {
+        
+        let mut mat;
+
+        if self.size == mat2.size {
+            mat = SquareMatrix::new(self.size);
+            for x in 1..=self.size {
+                for y in 1..=self.size {
+                    mat.set(x, y, self.get(x,y) + mat2.get(x,y))
+                }
+            }
+
+            return Ok(mat);
+        } else {
+            return Err(Error::new(ErrorKind::InvalidInput, "Mismatched matrix dimensions"));
+        }
+
+
+    }
 }
 
 #[wasm_bindgen]
@@ -133,16 +160,88 @@ pub fn determinant(m: String) -> f64 {
 }
 
 
+#[derive(Debug, Deserialize, Serialize, PartialEq, Clone)]
+#[serde(rename_all = "PascalCase")]
+struct Matrix {
+    sizex: usize,
+    sizey: usize,
+    matrix: Vec<f64>
+}
+
+impl Matrix {
+    pub fn new(sizex: usize, sizey: usize) -> Matrix {
+        let mut mat: Vec<f64> = Vec::new();
+
+        for _x in 0..(sizex * sizey) {
+			mat.push(0.0);
+		}
+
+        Matrix {
+            sizex: sizex,
+            sizey: sizey,
+            matrix: mat
+        }
+    }
+}
+
+impl MatrixTraits for Matrix {
+
+    type SuperMatrix = Matrix;
+
+    fn set(&mut self, row: usize, col:usize, val:f64) {
+		self.matrix[((row-1) * self.sizex + (col - 1)) as usize] = val
+	}
+
+    fn get(&self, row: usize, col:usize) -> f64 {
+        self.matrix[((row-1) * self.sizex + (col - 1))]
+    }
+
+    fn transpose(&self) -> Matrix {
+        let mut transposed_mat = Matrix::new(self.sizey, self.sizex);
+        for x in 1..=self.sizex {
+            for y in 1..=self.sizey {
+                transposed_mat.set(x, y, self.get(y, x));
+            }
+        }
+
+        transposed_mat
+    }
+
+    fn sum(&self, mat2: Matrix) -> Result<Matrix, Error> {
+
+        if self.sizex == mat2.sizex && self.sizey == mat2.sizey {
+            let mut mat = Matrix::new(self.sizex, self.sizey);
+
+            for x in 1..=self.sizey {
+                for y in 1..=self.sizex {
+                    println!("Riga {}, colonna {}", x, y);
+                    mat.set(x, y, self.get(x,y) + mat2.get(x,y))
+                }
+            }
+
+            return Ok(mat);
+        } else {
+            return Err(Error::new(ErrorKind::InvalidInput, "Mismatched matrix dimensions"));
+        }
+
+        
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
 
+    // Function tests
+
     #[test]
     fn float_sqrt_test() {
         assert_eq!(16.0, sqrt(256.0));
     }
+
+    // SquareMatrix tests
 
     #[test]
     fn determinant_test_1() {
@@ -178,7 +277,7 @@ mod tests {
     }
 
     #[test]
-    fn transposition_test() {
+    fn square_transposition_test() {
         let mut original_matrix = SquareMatrix::new(3);
         let mut transposed_matrix = SquareMatrix::new(3);
 
@@ -208,7 +307,6 @@ mod tests {
     #[test]
     fn inversion_test() {
         let mut original_matrix = SquareMatrix::new(3);
-        let mut inverse_matrix = SquareMatrix::new(3);
 
         original_matrix.set(1, 1, 1.0);
         original_matrix.set(1, 2, -1.0);
@@ -219,6 +317,8 @@ mod tests {
         original_matrix.set(3, 1, 2.0);
         original_matrix.set(3, 2, 3.0);
         original_matrix.set(3, 3, -4.0);
+
+        let mut inverse_matrix = SquareMatrix::new(3);
 
         inverse_matrix.set(1, 1, 3.0);
         inverse_matrix.set(1, 2, -4.0);
@@ -231,5 +331,106 @@ mod tests {
         inverse_matrix.set(3, 3, 1.0);
 
         assert_eq!(original_matrix, inverse_matrix.invert());
+    }
+
+    
+    #[test]
+    fn square_sum_test() {
+        let mut original_matrix = SquareMatrix::new(3);
+
+        original_matrix.set(1, 1, 1.0);
+        original_matrix.set(1, 2, -1.0);
+        original_matrix.set(1, 3, 0.0);
+        original_matrix.set(2, 1, 1.0);
+        original_matrix.set(2, 2, 0.0);
+        original_matrix.set(2, 3, -1.0);
+        original_matrix.set(3, 1, 2.0);
+        original_matrix.set(3, 2, 3.0);
+        original_matrix.set(3, 3, -4.0);
+
+        let mut second_matrix = SquareMatrix::new(2);
+
+        second_matrix.set(1, 1, 1.0);
+        second_matrix.set(1, 2, -1.0);
+        second_matrix.set(2, 1, 1.0);
+        second_matrix.set(2, 2, 0.0);
+
+        assert_eq!(original_matrix.sum(second_matrix).is_err(), true);
+        assert_eq!(original_matrix.sum(original_matrix.to_owned()).is_err(), false);
+
+        let mut third_matrix = SquareMatrix::new(3);
+
+        third_matrix.set(1, 1, 2.0);
+        third_matrix.set(1, 2, -2.0);
+        third_matrix.set(1, 3, 0.0);
+        third_matrix.set(2, 1, 2.0);
+        third_matrix.set(2, 2, 0.0);
+        third_matrix.set(2, 3, -2.0);
+        third_matrix.set(3, 1, 4.0);
+        third_matrix.set(3, 2, 6.0);
+        third_matrix.set(3, 3, -8.0);
+
+        assert_eq!(original_matrix.sum(original_matrix.to_owned()).unwrap(), third_matrix);
+    }
+
+
+    // Matrix tests
+
+    #[test]
+    fn transposition_test() {
+        let mut original_matrix = Matrix::new(3,2);
+
+        original_matrix.set(1, 1, 1.0);
+        original_matrix.set(1, 2, -1.0);
+        original_matrix.set(1, 3, 0.0);
+        original_matrix.set(2, 1, 1.0);
+        original_matrix.set(2, 2, 0.0);
+        original_matrix.set(2, 3, -1.0);
+
+        let mut transpose_matrix = Matrix::new(2,3);
+        
+        transpose_matrix.set(1, 1, 1.0);
+        transpose_matrix.set(1, 2, 1.0);
+        transpose_matrix.set(2, 1, -1.0);
+        transpose_matrix.set(2, 2, 0.0);
+        transpose_matrix.set(3, 1, 0.0);
+        transpose_matrix.set(3, 2, -1.0);
+
+        assert_eq!(original_matrix.transpose(), transpose_matrix);
+    }
+
+    #[test]
+    fn sum_test() {
+        let mut original_matrix = Matrix::new(3,2);
+
+        original_matrix.set(1, 1, 1.0);
+        original_matrix.set(1, 2, -1.0);
+        original_matrix.set(1, 3, 0.0);
+        original_matrix.set(2, 1, 1.0);
+        original_matrix.set(2, 2, 0.0);
+        original_matrix.set(2, 3, -1.0);
+
+        let mut second_matrix = Matrix::new(2,3);
+        
+        second_matrix.set(1, 1, 1.0);
+        second_matrix.set(1, 2, 1.0);
+        second_matrix.set(2, 1, -1.0);
+        second_matrix.set(2, 2, 0.0);
+        second_matrix.set(3, 1, 0.0);
+        second_matrix.set(3, 2, -1.0);
+
+        assert_eq!(original_matrix.sum(second_matrix).is_err(), true);
+        assert_eq!(original_matrix.sum(original_matrix.to_owned()).is_err(), false);
+
+        let mut third_matrix = Matrix::new(3,2);
+
+        third_matrix.set(1, 1, 2.0);
+        third_matrix.set(1, 2, -2.0);
+        third_matrix.set(1, 3, 0.0);
+        third_matrix.set(2, 1, 2.0);
+        third_matrix.set(2, 2, 0.0);
+        third_matrix.set(2, 3, -2.0);
+
+        assert_eq!(original_matrix.sum(original_matrix.to_owned()).unwrap(), third_matrix);
     }
 }
