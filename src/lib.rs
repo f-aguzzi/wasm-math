@@ -4,6 +4,8 @@ use wasm_bindgen::prelude::*;
 use std::io::{Error, ErrorKind};
 
 mod statistics;
+mod optimizers;
+mod calculus;
 
 #[wasm_bindgen]
 pub fn sqrt(n: f64) -> f64 {
