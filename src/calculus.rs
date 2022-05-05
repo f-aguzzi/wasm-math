@@ -1,5 +1,3 @@
-
-
 // Integration through Simpson's rule
 pub fn integrate<F: Fn(f64) -> f64>(f: F, a: f64, b: f64, precision: i32) -> f64 {
     let delta_x = (b - a) / precision as f64;
@@ -12,9 +10,8 @@ pub fn integrate<F: Fn(f64) -> f64>(f: F, a: f64, b: f64, precision: i32) -> f64
             sum += 2.0 * f(t);
         } else {
             sum += 4.0 * f(t);
-        } 
+        }
     }
-
 
     sum * delta_x / 3.0
 }
@@ -31,7 +28,6 @@ mod tests {
         let sine_integral = integrate(f64::sin, 0.0, PI, 350);
         let sine_integral = (sine_integral * 10000.0).round() / 10000.0;
         assert_eq!(sine_integral, 2.0);
-
 
         // Test on parabula
         let parabula = |x: f64| -> f64 { x * x };
