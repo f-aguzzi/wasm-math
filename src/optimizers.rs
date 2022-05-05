@@ -1,5 +1,3 @@
-
-
 pub fn maximum<F: Fn(f64) -> f64>(f: F, left: f64, right: f64, precision: f64) -> f64 {
     let mut max = f(left);
     let mut cur_position = left;
@@ -12,9 +10,7 @@ pub fn maximum<F: Fn(f64) -> f64>(f: F, left: f64, right: f64, precision: f64) -
     max
 }
 
-
 pub fn fzero<F: Fn(f64) -> f64>(f: F, left: f64, right: f64) -> f64 {
-
     let precision = 2048;
 
     let step = (right - left) / precision as f64;
@@ -26,7 +22,6 @@ pub fn fzero<F: Fn(f64) -> f64>(f: F, left: f64, right: f64) -> f64 {
         cur_position += step;
     }
 
-     
     let mut index = 0;
     while index < precision - 2 {
         if f(samples[index]).signum() != f(samples[index + 1]).signum() {
@@ -34,11 +29,6 @@ pub fn fzero<F: Fn(f64) -> f64>(f: F, left: f64, right: f64) -> f64 {
         }
         index += 1;
     }
-
-    dbg!(index);
-    dbg!(f(samples[index]));
-    dbg!(&samples[index]);
-    dbg!(&samples[index + 1]);
 
     let find_min_max = |a: f64, b: f64| -> (f64, f64) {
         if f(a) < f(b) {
@@ -53,18 +43,15 @@ pub fn fzero<F: Fn(f64) -> f64>(f: F, left: f64, right: f64) -> f64 {
     let mut max = min_max.1;
 
     let mut mid = (max + min) * 0.5;
-    
-
-    
 
     for _i in 0..(precision / 8) {
         let midpoint = f(mid);
-        
+
         if midpoint == 0.0 {
             break;
         } else if midpoint > 0.0 {
             max = mid;
-        } else  {
+        } else {
             min = mid;
         }
 
@@ -74,7 +61,6 @@ pub fn fzero<F: Fn(f64) -> f64>(f: F, left: f64, right: f64) -> f64 {
     mid
 }
 
-
 #[cfg(test)]
 mod tests {
 
@@ -83,7 +69,7 @@ mod tests {
     #[test]
     fn maximum_test() {
         let max = maximum(f64::cos, -1.0, 1.0, 0.0001);
-        
+
         // Approximate the result to 5 digits
         let max = (max * 10000.0).round() / 10000.0;
 
@@ -109,5 +95,4 @@ mod tests {
         let parabula_zero = parabula(zero);
         assert_eq!(parabula_zero, 0.0);
     }
-
 }
