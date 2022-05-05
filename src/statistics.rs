@@ -1,39 +1,47 @@
-use wasm_bindgen::prelude::*;
-use std::f64::consts::*;
-use crate::optimizers::fzero;
 use crate::calculus::integrate;
+use crate::optimizers::fzero;
+use std::f64::consts::*;
+use wasm_bindgen::prelude::*;
 
 /**
-*   ------------------------------------------------------
-*   NORMAL DISTRIBUTION
-*   Gaussian distribitions (normalized and non-normalized)
-*   Density, Cumulate and Quantile functions
-*   ------------------------------------------------------
-*/
+ *  ------------------------------------------------------
+ *  NORMAL DISTRIBUTION
+ *  Gaussian distribitions (normalized and non-normalized)
+ *  Density, Cumulate and Quantile functions
+ *  ------------------------------------------------------
+ */
 
+ // Gaussian distribution
 #[wasm_bindgen]
 pub fn normpdf(x: f64, mu: f64, sigma: f64) -> f64 {
     // f64::exp(-0.5 * f64::powi((x - mu) / sigma, 2)) / (sigma * f64::sqrt(2.0 * PI))
     s_normpdf(x - mu) / sigma
 }
 
+// Normal distribution
 #[wasm_bindgen]
 pub fn s_normpdf(x: f64) -> f64 {
     f64::exp(-0.5 * f64::powi(x, 2)) / f64::sqrt(2.0 * PI)
 }
 
+// Gaussian cumulate distribution
 #[wasm_bindgen]
 pub fn normcdf(x: f64, mu: f64, sigma: f64) -> f64 {
     s_normcdf((x - mu) / sigma)
 }
 
+// Standard cumulate distribution
 #[wasm_bindgen]
 pub fn s_normcdf(x: f64) -> f64 {
     // Using the Zelen & Severo's approximate algorithm
     let t: f64 = 1.0 / (1.0 + 0.2316419 * x);
-    1.0 - s_normpdf(x) * (0.319381530 * t - 0.356563782 * f64::powi(t, 2) + 1.781477937 * f64::powi(t, 3) - 1.821255978 * f64::powi(t, 4) + 1.330274429 * f64::powi(t, 5))
+    1.0 - s_normpdf(x)
+        * (0.319381530 * t - 0.356563782 * f64::powi(t, 2) + 1.781477937 * f64::powi(t, 3)
+            - 1.821255978 * f64::powi(t, 4)
+            + 1.330274429 * f64::powi(t, 5))
 }
 
+// Standard distribution quantile
 #[wasm_bindgen]
 pub fn s_norminv(x: f64) -> f64 {
     // Using Shore's approximate algorithm
@@ -44,24 +52,34 @@ pub fn s_norminv(x: f64) -> f64 {
     }
 }
 
+// Gaussian quantile
 #[wasm_bindgen]
 pub fn norminv(x: f64, mu: f64, sigma: f64) -> f64 {
     mu + s_norminv(x) * sigma
 }
 
 /**
-*   ----------------------------------------------------------------
-*   GENERAL STATISTICAL FORMULAE
-*   Collections of formulae that are needed to compute distributions
-*   ----------------------------------------------------------------
-*/
+ *  --------------------------------------------------------------
+ *  GAMMA DISTRIBUTION
+ *  Gamma functions (complete, lower incomplete, upper incomplete)
+ *  Gamma distribution (pdf, cdf, quantile)
+ *  --------------------------------------------------------------
+ */
 
 // Gamma function
 #[wasm_bindgen]
 pub fn gamma(x: f64) -> f64 {
     // coefficients from Chebyshev polynomials
-    let q = vec![75122.6331530, 80916.6278952, 36308.2951477, 8687.24529705, 1168.92649479, 83.8676043424, 2.50662827511];
-    
+    let q = vec![
+        75122.6331530,
+        80916.6278952,
+        36308.2951477,
+        8687.24529705,
+        1168.92649479,
+        83.8676043424,
+        2.50662827511,
+    ];
+
     let mut num: f64 = 0.0;
     let mut den: f64 = 1.0;
 
@@ -74,70 +92,128 @@ pub fn gamma(x: f64) -> f64 {
     num * den.recip() * (x + 5.5).powf(x + 0.5) * f64::exp(-(x + 5.5))
 }
 
-// Incomplete Beta Function
-pub fn incbet(x: f64, a: f64, b: f64) -> f64 {
-    // I had to give up and use numerical integration
-    let beta_deriv = |t: f64| -> f64 { t.powf(a - 1.0) * (1.0 - t).powf(b - 1.0) };
-    integrate(beta_deriv, 0.0, x, 256)
-}   
+// Lower incomplete gamma function
+#[wasm_bindgen]
+pub fn lowincgamma(s: f64, x: f64) -> f64 {
+    gamma(s) * gammapdf(x, s, 1.0)
+}
+
+// Upper incomplete gamma function
+#[wasm_bindgen]
+pub fn uppincgamma(s: f64, x: f64) -> f64 {
+    gamma(s) * (1.0 - gammapdf(x, s, 1.0))
+}
+
+// Regularized incomplete gamma function
+#[wasm_bindgen]
+pub fn regincgamma(s: f64, x: f64) -> f64 {
+    gamma(s) * (1.0 - gammapdf(x, s, 1.0))
+}
+
+// Gamma distribution
+#[wasm_bindgen]
+pub fn gammapdf(x: f64, a: f64, b: f64) -> f64 {
+    if x < 0.0 {
+        return f64::NAN;
+    }
+    x.powf(a - 1.0) * f64::exp(-b * x) * b.powf(a) / gamma(a)
+}
+
+// Cumulate gamma distribution
+#[wasm_bindgen]
+pub fn gammacdf(x: f64, a: f64, b: f64) -> f64 {
+    unimplemented!()
+}
+
+// Ggamma distribution quantile
+#[wasm_bindgen]
+pub fn gammainv(x: f64, a: f64, b: f64) -> f64 {
+    unimplemented!()
+}
+
+
+/**
+ *  -------------------------------------------------
+ *  BETA DISTRIBUTION
+ *  Beta function (complete, incomplete, regularized)
+ *  Beta distribution (pdf, cdf, quantile)
+ *  -------------------------------------------------
+ */
 
 // Beta function
+#[wasm_bindgen]
 pub fn beta(x: f64, y: f64) -> f64 {
     gamma(x) * gamma(y) / gamma(x + y)
 }
 
+// Incomplete Beta Function
+#[wasm_bindgen]
+pub fn incbet(x: f64, a: f64, b: f64) -> f64 {
+    // I had to give up and use numerical integration
+    let beta_deriv = |t: f64| -> f64 { t.powf(a - 1.0) * (1.0 - t).powf(b - 1.0) };
+    integrate(beta_deriv, 0.0, x, 256)
+}
 
 // Regularized incomplete beta function
+#[wasm_bindgen]
 pub fn regincbet(x: f64, a: f64, b: f64) -> f64 {
     incbet(x, a, b) / beta(a, b)
 }
 
-/**
-*   -----------------------------------------------
-*   STUDENT'S T DISTRIBUTION
-*   t distribitions (normalized and non-normalized)
-*   Density, Cumulate and Quantile functions
-*   -----------------------------------------------
-*/
-
+// Beta distribution
 #[wasm_bindgen]
-pub fn tpdf(x: f64, v: f64) -> f64 {
-    gamma((v + 1.0) * 0.5) * (v * PI).sqrt().recip() * gamma(v * 0.5).recip() * (1.0 + x*x * v.recip()).powf(-(v + 1.0) * 0.5)
+pub fn betapdf(x: f64, a: f64, b: f64) -> f64 {
+    unimplemented!()
 }
 
+// Cumulative beta distribution
+#[wasm_bindgen]
+pub fn betacdf(x: f64, a: f64, b: f64) -> f64 {
+    unimplemented!()
+}
 
+// Beta distribution quantile
+#[wasm_bindgen]
+pub fn betainv(x: f64, a: f64, b: f64) -> f64 {
+    unimplemented!()
+}
+
+/**
+ *  ----------------------------------------
+ *  STUDENT'S T DISTRIBUTION
+ *  t distribitions (normalized)
+ *  Density, Cumulate and Quantile functions
+ *  ----------------------------------------
+ */
+
+// t distribution
+#[wasm_bindgen]
+pub fn tpdf(x: f64, v: f64) -> f64 {
+    gamma((v + 1.0) * 0.5)
+        * (v * PI).sqrt().recip()
+        * gamma(v * 0.5).recip()
+        * (1.0 + x * x * v.recip()).powf(-(v + 1.0) * 0.5)
+}
+
+// Cumulate t distribution
 #[wasm_bindgen]
 pub fn tcdf(x: f64, v: f64) -> f64 {
     if x == 0.0 {
-        return 0.5
+        return 0.5;
     }
 
-    let tdist2t = |t: f64, v: f64| -> f64 { 1.0 - regincbet(v / (v + t*t), v * 0.5, 0.5) };
+    let tdist2t = |t: f64, v: f64| -> f64 { 1.0 - regincbet(v / (v + t * t), v * 0.5, 0.5) };
     let tdist1t = |t: f64, v: f64| -> f64 { 1.0 - (1.0 - tdist2t(t, v)) * 0.5 };
 
     match x > 0.0 {
         true => tdist1t(x, v),
-        false => 1.0 - tdist1t(-x, v)
+        false => 1.0 - tdist1t(-x, v),
     }
 }
 
-/*
-
-% % Variables: 
-% % t: t-statistic
-% % v: degrees of freedom
-tdist2T = @(t,v) (1-betainc(v/(v+t^2),v/2,0.5));                                % 2-tailed t-distribution
-tdist1T = @(t,v) 1-(1-tdist2T(t,v))/2;                                          % 1-tailed t-distribution
-t_inv = @(alpha,v) fzero(@(tval) (max(alpha,(1-alpha)) - tdist1T(tval,v)), 5);  % T-Statistic Given Probability ‘alpha’ & Degrees-Of-Freedom ‘v’
-
-
-
-*/
-
-
+// t distribution quantile
 #[wasm_bindgen]
 pub fn tinv(x: f64, v: f64) -> f64 {
-
     let to_maximize = |tval: f64| -> f64 { x - tcdf(tval, v) };
 
     if x < i8::MIN as f64 {
@@ -149,20 +225,53 @@ pub fn tinv(x: f64, v: f64) -> f64 {
     } else {
         fzero(to_maximize, i8::MIN as f64, i8::MAX as f64)
     }
-    
 }
 
+/**
+*   ----------------------------------------
+*   CHI SQUARED DISTRIBUTION
+*   X^2 distribition
+*   Density, Cumulate and Quantile functions
+*   ----------------------------------------
+*/
 
+#[wasm_bindgen]
+pub fn chi2pdf(x: f64, k: f64) -> f64 {
+    if x > 0.0 {
+        x.powf(0.5 * k - 1.0) * f64::exp(-0.5 * x) * (-0.5 * k).exp2() / gamma(0.5 * k)
+    } else {
+        0.0
+    }
+}
 
+#[wasm_bindgen]
+pub fn chi2cdf(x: f64, k: f64) -> f64 {
+    gamma(x * 0.5).recip() * lowincgamma(k * 0.5, x * 0.5)
+}
+
+#[wasm_bindgen]
+pub fn chi2inv(x: f64, k: f64) -> f64 {
+    x + (4.0 * (k - 1.0)).recip() * x * x
+}
+
+/**
+ * |----------------------------|
+ * |----------------------------|
+ * |         UNIT TESTS         |
+ * |----------------------------|
+ * |----------------------------|
+ */
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
 
-    // --------------------------
-    //  NORMAL DISTRIBUTION TESTS
-    //  -------------------------
+    /**
+     *  ------------------------------
+     *  NORMAL DISTRIBUTION UNIT TESTS
+     *  ------------------------------
+     */
 
     #[test]
     fn normpdf_test() {
@@ -174,7 +283,7 @@ mod tests {
     fn s_normpdf_test() {
         // Does the normal probability function compute the correct result?
 
-        //  Approximate the result 
+        //  Approximate the result
         // (two different square root algorithms, so slightly different results are expected)
         let s_norm: String = s_normpdf(1.0).to_string().chars().take(5).collect();
         let norm: String = normpdf(1.0, 0.0, 1.0).to_string().chars().take(5).collect();
@@ -207,9 +316,11 @@ mod tests {
         assert_eq!(norminv(0.3, 4.0, 2.0), 2.937709110332562)
     }
 
-    // -------------------------------------
-    //  GENERAL STATISTIC FUNCTIONS UNIT TEST
-    //  -------------------------------------
+    /**
+     *  -----------------------------
+     *  GAMMA DISTRIBUTION UNIT TESTS
+     *  -----------------------------
+     */
 
     #[test]
     fn gamma_test() {
@@ -221,6 +332,84 @@ mod tests {
 
         // Compare with MATLAB result
         assert_eq!(gamma, 1.1667);
+    }
+
+    #[test]
+    fn lowincgamma_test() {
+        // Extract the result
+        let lowincgamma = lowincgamma(1.44, 3.5);
+
+        // Round to 5 digits
+        let lowincgamma = (lowincgamma * 10000.0).round() / 10000.0;
+
+        // Compare with MATLAB result
+        assert_eq!(lowincgamma, 0.1041);
+    }
+
+    #[test]
+    fn uppincgamma_test() {
+        // Extract the result
+        let lowincgamma = uppincgamma(1.44, 3.5);
+
+        // Round to 5 digits
+        let lowincgamma = (lowincgamma * 10000.0).round() / 10000.0;
+
+        // Compare with MATLAB result
+        assert_eq!(lowincgamma, 0.8959);
+    }
+
+    #[test]
+    fn gammapdf_test() {
+        // Compute the result
+        let pdf = gammapdf(0.93, 3.0, 7.0);
+
+        // Round to 5 digits
+        let pdf = (pdf * 10000.0).round() / 10000.0;
+
+        // Compare with MATLAB result
+        assert_eq!(pdf, 0.0011);
+    }
+
+    #[test]
+    fn gammacdf_test() {
+        // Compute the result
+        let cdf = gammacdf(1.23, 2.0, 2.0);
+
+        // Round to 5 digits
+        let cdf = (cdf * 10000.0).round() / 10000.0;
+
+        // Compare with MATLAB result
+        assert_eq!(cdf, 0.1269);
+    }
+
+    #[test]
+    fn gammainv_test() {
+        // Compute the result
+        let inv = gammainv(0.68, 3.0, 3.0);
+
+        // Round to 5 digits
+        let inv = (inv * 10000.0).round() / 10000.0;
+
+        // Compare with MATLAB result
+        assert_eq!(inv, 10.5138);
+    }
+
+    /**
+     *  -----------------------
+     *  BETA DISTRIBUTION TESTS
+     *  -----------------------
+     */
+
+    #[test]
+    fn beta_test() {
+        // Extract the result
+        let beta = beta(3.0, 2.0);
+
+        // Round to 5 digits
+        let beta = (beta * 10000.0).round() / 10000.0;
+
+        // Compare with MATLAB result
+        assert_eq!(beta, 0.0833);
     }
 
     #[test]
@@ -236,18 +425,6 @@ mod tests {
     }
 
     #[test]
-    fn beta_test() {
-        // Extract the result
-        let beta = beta(3.0,2.0);
-
-        // Round to 5 digits
-        let beta = (beta * 10000.0).round() / 10000.0;
-
-        // Compare with MATLAB result
-        assert_eq!(beta, 0.0833);
-    }
-
-    #[test]
     fn regincbet_test() {
         // Extract the result
         let regincbet = regincbet(0.3, 11.0, 7.0);
@@ -258,6 +435,43 @@ mod tests {
         // Compare with MATLAB result
         assert_eq!(regincbet, 0.0032);
     }
+
+    #[test]
+    fn betapdf_test() {
+        // Compute the result
+        let pdf = betapdf(0.01, 2.0, 5.0);
+
+        // Round to 5 digits
+        let pdf = (pdf * 10000.0).round() / 10000.0;
+
+        // Compare with MATLAB result
+        assert_eq!(pdf, 0.2882);
+    }
+
+    #[test]
+    fn betacdf_test() {
+        // Compute the result
+        let cdf = betacdf(0.6, 9.0, 4.0);
+
+        // Round to 5 digits
+        let cdf = (cdf * 10000.0).round() / 10000.0;
+
+        // Compare with MATLAB result
+        assert_eq!(cdf, 0.2253);
+    }
+
+    #[test]
+    fn betainv_test() {
+        // Compute the result
+        let inv = betainv(0.72, 3.0, 4.0);
+
+        // Round to 5 digits
+        let inv = (inv * 10000.0).round() / 10000.0;
+
+        // Compare with MATLAB result
+        assert_eq!(inv, 0.5354);
+    }
+
 
     //  --------------------
     //  T DISTRIBUTION TESTS
@@ -309,5 +523,43 @@ mod tests {
         assert_eq!(tinv, -0.2619);
     }
 
+    // ------------------------
+    // CHI^2 DISTRIBUTION TESTS
+    // ------------------------
 
+    #[test]
+    fn chi2pdf_test() {
+        // Compute the result
+        let pdf = chi2pdf(0.56, 5.0);
+
+        // Round to 5 digits
+        let pdf = (pdf * 10000.0).round() / 10000.0;
+
+        // Check against MATLAB result
+        assert_eq!(pdf, 0.0421);
+    }
+
+    #[test]
+    fn chi2cdf_test() {
+        // Compute the result
+        let cdf = chi2cdf(0.42, 3.0);
+
+        // Round to 5 digits
+        let cdf = (cdf * 10000.0).round() / 10000.0;
+
+        // Check against MATLAB result
+        assert_eq!(cdf, 0.0639);
+    }
+
+    #[test]
+    fn chi2inv_test() {
+        // Compute the result
+        let inv = chi2inv(0.076, 4.0);
+
+        // Round to 5 digits
+        let inv = (inv * 10000.0).round() / 10000.0;
+
+        // Check against MATLAB result
+        assert_eq!(inv, 0.9039);
+    }
 }
