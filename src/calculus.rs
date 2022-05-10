@@ -16,6 +16,13 @@ pub fn integrate<F: Fn(f64) -> f64>(f: F, a: f64, b: f64, precision: i32) -> f64
     sum * delta_x / 3.0
 }
 
+// Naïve differentiation algorithm
+pub fn differentiate<F: Fn(f64) -> f64>(f: F, a: f64) -> f64 {
+    let delta_x = 0.0000000001;
+
+    (f(a + delta_x) - f(a)) / delta_x
+} 
+
 #[cfg(test)]
 mod tests {
 
@@ -34,5 +41,22 @@ mod tests {
         let parabula_integral = integrate(parabula, 0.0, 1.0, 256);
         let parabula_integral = (parabula_integral * 10000.0).round() / 10000.0;
         assert_eq!(parabula_integral, 0.3333);
+    }
+
+    #[test]
+    fn differentiate_test() {
+        let parabula = |x: f64| -> f64 { x * x };
+
+        let parabula_derivative_1 = differentiate(parabula, 0.0);
+        let parabula_derivative_1 = (parabula_derivative_1 * 10000.0).round() / 10000.0;
+        assert_eq!(parabula_derivative_1, 0.0);
+
+        let parabula_derivative_2 = differentiate(parabula, 1.0);
+        let parabula_derivative_2 = (parabula_derivative_2 * 10000.0).round() / 10000.0;
+        assert_eq!(parabula_derivative_2, 2.0);
+
+        let parabula_derivative_3 = differentiate(parabula, -2.5);
+        let parabula_derivative_3 = (parabula_derivative_3 * 10000.0).round() / 10000.0;
+        assert_eq!(parabula_derivative_3, -5.0);
     }
 }
