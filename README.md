@@ -62,3 +62,11 @@ _Note: all of these functions are not accessible from WASM._
 - numeric minimum finder
 - numeric stationary points finder
 - numeric root finder
+
+### Matrix Math
+- square and regular matrices
+- matrix operations
+  - sum
+  - multiplication
+  - inversion
+  - transposition
