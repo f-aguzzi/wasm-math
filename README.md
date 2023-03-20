@@ -2,7 +2,12 @@
 
 A simple math library, written in Rust, targeting WebAssembly.
 
-_WARNING: STILL DOESN'T COMPILE CORRECTLY TO WASM!_
+_WARNING: WASM OUTPUT STILL UNTESTED!_
+
+## How to compile
+Run the command:
+
+```wasm-pack build```
 
 ## Implemented functions
 Some functions are implemented from scratch, while others are just
