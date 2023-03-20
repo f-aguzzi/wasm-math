@@ -24,7 +24,7 @@ pub fn minimum<F: Fn(f64) -> f64>(f: F, left: f64, right: f64, precision: f64) -
     min
 }
 
-pub fn stationaryPoints<F: Fn(f64) -> f64>(f: F, left: f64, right: f64, precision: f64) -> Vec<f64> {
+pub fn stationary_points<F: Fn(f64) -> f64>(f: F, left: f64, right: f64, precision: f64) -> Vec<f64> {
     let mut points: Vec<f64> = Vec::new();
     let mut cur_position = left;
 
@@ -125,7 +125,7 @@ mod tests {
     #[test]
     fn stationaryPoints_test() {
 
-        let points = stationaryPoints(f64::cos, 0.0, 2.0 * PI, 0.0001);
+        let points = stationary_points(f64::cos, 0.0, 2.0 * PI, 0.0001);
 
         // Maximum in 0
         let point_0 = (points[0] * 10000.0).round() / 10000.0;
