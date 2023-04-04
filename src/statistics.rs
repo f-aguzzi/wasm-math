@@ -11,7 +11,7 @@ use wasm_bindgen::prelude::*;
  *  ------------------------------------------------------
  */
 
- // Gaussian distribution
+// Gaussian distribution
 #[wasm_bindgen]
 pub fn normpdf(x: f64, mu: f64, sigma: f64) -> f64 {
     // f64::exp(-0.5 * f64::powi((x - mu) / sigma, 2)) / (sigma * f64::sqrt(2.0 * PI))
@@ -131,7 +131,6 @@ pub fn gammainv(x: f64, a: f64, b: f64) -> f64 {
     unimplemented!()
 }
 
-
 /**
  *  -------------------------------------------------
  *  BETA DISTRIBUTION
@@ -163,7 +162,7 @@ pub fn regincbet(x: f64, a: f64, b: f64) -> f64 {
 // Beta distribution
 #[wasm_bindgen]
 pub fn betapdf(x: f64, a: f64, b: f64) -> f64 {
-    unimplemented!()
+    return x.powf(a - 1.00) * (1.00 - x).powf(b - 1.00) / beta(a, b);
 }
 
 // Cumulative beta distribution
@@ -471,7 +470,6 @@ mod tests {
         // Compare with MATLAB result
         assert_eq!(inv, 0.5354);
     }
-
 
     //  --------------------
     //  T DISTRIBUTION TESTS
